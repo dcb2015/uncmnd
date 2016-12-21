@@ -1,6 +1,6 @@
 // UNCMD_ak1.CPP - Program for minimizing a function of several variables (with no constraints.) Can also be used for non-linear Least Squares Data-fitting.
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
-// 15 December 2016
+// 20 December 2016
 //
 // This program is a translation of the FORTRAN routine UNCMND
 // written by Stephen Nash, George Mason University.
@@ -45,10 +45,6 @@ double fObj(int N, double* vec, C1DArray x) {
 	// x: the present value of x
 
 	double dummy;  // A dummy variable
-
-	//cout << "\nThe values of x input to fObj follow:\n";
-	//for (i = 0; i < N; ++i)
-	//	cout << "x[" << i << "] = " << x[i] << "\n";
 
 	dummy = vec[0] * x[0] * x[0] + vec[1] * x[1] * x[1] + vec[2] * x[2] * x[2] + vec[3] * x[0] * x[1] + vec[4] * x[1] * x[2] + vec[5] * x[0] * x[2];
 	dummy += vec[6] * x[0] * x[0] * x[1] + vec[7] * x[0] * x[0] * x[2] + vec[8] * x[0] * x[1] * x[1] + vec[9] * x[1] * x[1] * x[2] + vec[10] * x[0] * x[2] * x[2] + vec[11] * x[1] * x[2] * x[2];
@@ -429,7 +425,7 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 	int i, icscmx, iretcd, itncnt = 0, j, k;
 	bool fDifFLG = 1, mxtake;
 	bool NOUPDT = 1, SKPUPD;		// Variables for SECFCD
-	double ALP, DEN1, DEN2, RELTOL, SNORM2, YNRM2;		// Variables for SECFCD
+	double ALP, DEN1, RELTOL, SNORM2, YNRM2;		// Variables for SECFCD
 	double stpsiz, temp, tempfx = 0.0;
 
 	const double EPSMCH = DBL_EPSILON; //Machine epsilon for type double
@@ -450,9 +446,6 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 	const double RNF = temp;
 	const double RT2RNF = sqrt(RNF);
 	const double RNFRT13 = pow(RNF, 1.0 / 3.0);
-
-	cout << "\nThe values of x0 input to uncmd follow:\n";
-	for (i = 0; i < N; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
 
 	*fx = fObj(N, vec, x0);
 	cout << "\nAt x0, the Objective Function = " << *fx << " \n\n";
@@ -545,8 +538,8 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 
 		// SECFCD	*************************************************************
 		
-		// The FIRST time in SECFCD (when itncnt == 1), NOUPDT is 1, and an extra code block done below.
-		// Subsequent times in SECFCD, this code block is skipped.
+		// Before A is changed, NOUPDT = 1; simplified calculations can be done.
+		// After A updated, full routine must be done.
 
 		for (i = 0; i < N; ++i) YVEC[i] = gtemp[i] - g[i];
 
@@ -567,10 +560,10 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 
 				for (i = 0; i < N; ++i){
 					UVEC[i] = ALP*p[i];
+					WVEC[i] = ALP*UVEC[i];
 					A[i][i] = ALP;
 				} // End for i
 
-				DEN2 = DEN1;
 				ALP = 1.0;
 				NOUPDT = 0;
 
@@ -587,20 +580,19 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 
 				// End of MVMLUD
 
-				DEN2 = Euclid2Norm(N, UVEC);
-				ALP /= DEN2;
+				// MVMLLD
+
+				for (i = 0; i < N; ++i){
+					temp = 0.0;
+					for (j = 0; j <= i; ++j) temp += A[i][j] * UVEC[j];
+					WVEC[i] = temp;
+				} // End for i
+
+				// End of MVMLLD
+
+				ALP /= Euclid2Norm(N, UVEC);
 
 			} // End else (!NOUPDT)
-
-			// MVMLLD
-
-			for (i = 0; i < N; ++i){
-				temp = 0.0;
-				for (j = 0; j <= i; ++j) temp += A[i][j] * UVEC[j];
-				WVEC[i] = temp;
-			} // End for i
-
-			// End of MVMLLD
 
 			if (fDifFLG) RELTOL = RT2RNF;
 			else RELTOL = RNF;
@@ -679,7 +671,7 @@ int main()
 {
 	char rflag = 0;	//Readiness flag 
 
-	cout << "                     UNCMD_ak1   (15 December 2016)\n";
+	cout << "                     UNCMD_ak1   (20 December 2016)\n";
 	cout << "=========================================================================== \n";
 	cout << "This program minimizes a function of three variables (without constraints): \n";
 	
@@ -751,7 +743,6 @@ int main()
 			UVEC.resize(rDim);
 			WVEC.resize(rDim);
 
-
 			HessMat.resize(rDim);
 			for (i = 0; i < rDim; ++i) HessMat[i].resize(rDim);
 
@@ -782,9 +773,8 @@ int main()
 		cout << "I = " << coeffVec[8] << "\t\tJ = " << coeffVec[9] << "\n";
 		cout << "K = " << coeffVec[10] << "\tL = " << coeffVec[11] << "\n";
 
-		//cout << "\nThe initial guess values follow:\n";
-		//for (i = 0; i < rDim; ++i)
-		//	cout << "x0[" << i << "] = " << x0[i] << "\n";
+		cout << "\nThe values of x0 follow:\n";
+		for (i = 0; i < rDim; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
 
 		uncmd(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
 
@@ -809,27 +799,15 @@ int main()
 		default:	cout << "Invalid Error Code.\n";
 		} //End switch
 
-		cout << "\nThe solution vector is:" << "  \n";
-		for (i = 0; i < rDim; ++i)
-			cout << xVec[i] << "  \n";
-		cout << " \n";
+		cout << "\nThe values of x follow:" << "  \n";
+		for (i = 0; i < rDim; ++i) cout << xVec[i] << "  \n";
 
-		cout << "At this point, the Objective Function takes the value " << fv << " \n";
-
-		cout << "\nProgram ran to completion. About to exit.\n";
-		cout << "\nEnter any key to continue. \n";
-		cin >> rflag;
-		return 0;
-
-		cout << "The solution vector is:" << "  \n";
-		for (i = 0; i < rDim; ++i)
-			cout << xVec[i] << "  \n";
-		cout << " \n";
-
-		cout << "At this point, the Objective Function takes the value " << fv << " \n";
+		cout << "\nAt this point, the Objective Function = " << fv << " \n";
 
 	} //End if rflag = 'Y'
 	else cout << "\nNot ready. Try again when ready with information. \n";
+
+	cout << "\nProgram ran to completion. About to exit.\n";
 	cout << "\nEnter any key to continue. \n";
 	cin >> rflag;
 	return 0;
