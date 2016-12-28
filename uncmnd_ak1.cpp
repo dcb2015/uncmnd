@@ -1,6 +1,6 @@
 // UNCMD_ak1.CPP - Program for minimizing a function of several variables (with no constraints.) Can also be used for non-linear Least Squares Data-fitting.
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
-// 20 December 2016
+// 27 December 2016
 //
 // This program is a translation of the FORTRAN routine UNCMND
 // written by Stephen Nash, George Mason University.
@@ -450,7 +450,7 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 	*fx = fObj(N, vec, x0);
 	cout << "\nAt x0, the Objective Function = " << *fx << " \n\n";
 
-	// Compute the gradients df/dx[i] and save these values in g array
+	// Compute the gradients at x0; save these values in g array
 	FSTFDD_ak1(N, vec, x0, g, RT2RNF, *fx);
 
 	// OPTSTD
@@ -476,19 +476,7 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 
 	// End of OPTSTD
 
-	// Assume function is expensive to evaluate (IEXP = 1), so Hessian will be obtained by secant updates. Obtain initial Hessian
-
-	// HSNNTD
-
-	// Assign Lower Triangular part of A the value 0.0, except elements on the diagonal, which are assigned the value 1.0
-
-	A[0][0] = 1.0;
-	for (i = 1; i < N; ++i){  
-		for (j = 0; j < i; ++j)	A[i][j] = 0.0;
-		A[i][i] = 1.0;
-	} // End for i
-
-	// End of HSNNTD
+	// Assume function is expensive to evaluate (IEXP = 1), so Hessian will be obtained by secant updates.
 
 	// Main iterative loop
 	for (k = 0; k <= MAXIT; ++k) {
@@ -519,16 +507,8 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 		// Calculate Gradient at x
 		// Store this gradient in gtemp
 
-		if (fDifFLG){ // Forward Difference
-
-			FSTFDD_ak1(N, vec, x, gtemp, RT2RNF, tempfx);
-
-		} // End if (fDifFLG)
-		else { // Central Difference
-
-			FSTCDD_ak1(N, vec, x, gtemp, RNFRT13);
-
-		} // End else (!fDifFLG)
+		if (fDifFLG) FSTFDD_ak1(N, vec, x, gtemp, RT2RNF, tempfx);
+		else FSTCDD_ak1(N, vec, x, gtemp, RNFRT13);
 
 		// Check whether stopping criteria satisfied
 
@@ -671,7 +651,7 @@ int main()
 {
 	char rflag = 0;	//Readiness flag 
 
-	cout << "                     UNCMD_ak1   (20 December 2016)\n";
+	cout << "                     UNCMD_ak1   (27 December 2016)\n";
 	cout << "=========================================================================== \n";
 	cout << "This program minimizes a function of three variables (without constraints): \n";
 	
@@ -777,8 +757,6 @@ int main()
 		for (i = 0; i < rDim; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
 
 		uncmd(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
-
-		cout << "\nJust returned from uncmd.\n";
 
 		cout << "\ninfo = " << info << " \n";
 
