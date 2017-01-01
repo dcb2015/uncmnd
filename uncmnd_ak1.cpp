@@ -1,6 +1,6 @@
-// UNCMD_ak1.CPP - Program for minimizing a function of several variables (with no constraints.) Can also be used for non-linear Least Squares Data-fitting.
+// UNCMND_ak1.CPP - Program for minimizing a function of several variables (with no constraints.) Can also be used for non-linear Least Squares Data-fitting.
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
-// 27 December 2016
+// 1 January 2017
 //
 // This program is a translation of the FORTRAN routine UNCMND
 // written by Stephen Nash, George Mason University.
@@ -20,7 +20,7 @@
 #include <vector>
 #include <cfloat>
 
-#define NUMCOEFF 12
+#define NUMCOEFF 2
 
 using namespace std;
 
@@ -36,7 +36,7 @@ void LLTSLD_ak1(int N, C1DArray& pvec, C1DArray gvec, C2DArray A);
 void LNSRCD_ak1_ak1(int N, C1DArray x0, C1DArray& x, C1DArray g, C1DArray& p, int *iretcd, bool *mxtake, double *tempfx, double STEPTL, double STEPMX, double* vec, double fxn0);
 void OPTSTD_ak1(int N, C1DArray p, C1DArray x, C1DArray gtemp, int iretcd, int *itrmcd, int *icscmx, double tempfx, double GRADTL, double STEPTL, int MAXIT, bool mxtake, int itncnt);
 void QRUPDD_ak1(int N, C1DArray& UVEC, C1DArray WVEC, C2DArray& A);
-void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC);
+void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC);
 
 double fObj(int N, double* vec, C1DArray x) {
 	// The objective function.
@@ -44,10 +44,11 @@ double fObj(int N, double* vec, C1DArray x) {
 	// vec: the coefficient vector
 	// x: the present value of x
 
-	double dummy;  // A dummy variable
+	double dummy, temp1, temp2;  // Dummy variables
 
-	dummy = vec[0] * x[0] * x[0] + vec[1] * x[1] * x[1] + vec[2] * x[2] * x[2] + vec[3] * x[0] * x[1] + vec[4] * x[1] * x[2] + vec[5] * x[0] * x[2];
-	dummy += vec[6] * x[0] * x[0] * x[1] + vec[7] * x[0] * x[0] * x[2] + vec[8] * x[0] * x[1] * x[1] + vec[9] * x[1] * x[1] * x[2] + vec[10] * x[0] * x[2] * x[2] + vec[11] * x[1] * x[2] * x[2];
+	temp1 = x[1] - x[0] * x[0];
+	temp2 = 1.0 - x[0];
+	dummy = vec[0] * temp1 * temp1 + vec[1] * temp2 * temp2;
 	return dummy;
 } //End fObj
 
@@ -408,7 +409,7 @@ void QRUPDD_ak1(int N, C1DArray& UVEC, C1DArray WVEC, C2DArray& A){
 	return;
 } // End of QRUPDD_ak1
 
-void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC) {
+void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC) {
 	// This subroutine minimizes a smooth nonlinear function of N independent variables
 	//
 	// Termination Code:
@@ -645,34 +646,30 @@ void uncmd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, 
 	} // End if (*info == 3)
 
 	return;
-} // End uncmd
+} // End uncmnd
 
 int main()
 {
 	char rflag = 0;	//Readiness flag 
 
-	cout << "                     UNCMD_ak1   (27 December 2016)\n";
+	cout << "                     UNCMND_ak1   (1 January 2017)\n";
 	cout << "=========================================================================== \n";
-	cout << "This program minimizes a function of three variables (without constraints): \n";
+	cout << "This program minimizes a function of two variables (without constraints): \n";
 	
-	cout << "A x^2 + B y^2 + C z^2 + \n";
-	cout << "D xy + E yz + F xz + \n";
-	cout << "G x^2y + H x^2z + \n";
-	cout << "I xy^2 + J y^2z + \n";
-	cout << "K xz^2 + L yz^2\n\n";
-
-	cout << "Data should have been saved beforehand in a file named uncmd_in.txt, which\n";
-	cout << "should be in the same folder as the uncmd_ak1 executable. The\n";
-	cout << "first entry in this file should be N, the number of dimensions (3).\n";
+	cout << "A (y - x^2)^2 + B (1 - x)^2\n";
+	
+	cout << "Data should have been saved beforehand in a file named uncmnd_in.txt, which\n";
+	cout << "should be in the same folder as the uncmnd_ak1 executable. The\n";
+	cout << "first entry in this file should be N, the number of dimensions (2).\n";
 	cout << "The entries for the function should follow:\n";
-	cout << "A, B, C, D, E, F, G, H, I, J, K, and L.\n\n";
+	cout << "A, and B.\n\n";
 
 	cout << "The program assumes an initial guess for the solution has been provided.\n";
 	cout << "This data should come next. \n\n";
 
 	cout << "\nThe data is assumed to be of type double. Variables used within this program\n";
 	cout << "are type double.\n";
-	cout << "\nThe solution is written to the file uncmd_out.txt.\n";
+	cout << "\nThe solution is written to the file uncmnd_out.txt.\n";
 	cout << "\nIs everything ready (are you ready to continue?)? If yes, Enter y. \n";
 	cout << "Otherwise Enter any other key. \n";
 	cin >> rflag;
@@ -686,7 +683,7 @@ int main()
 		int i, info, rDim;
 		double fv;							// The function value
 
-		ifstream in("uncmd_in.txt", ios::in);
+		ifstream in("uncmnd_in.txt", ios::in);
 
 		if (!in) {
 			cout << "Cannot open the input file.\n";
@@ -747,16 +744,17 @@ int main()
 		cout.precision(DBL_DIG);
 
 		cout << "The function coefficients follow:\n";
-		cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\tC = " << coeffVec[2] << "\n";
-		cout << "D = " << coeffVec[3] << "\tE = " << coeffVec[4] << "\tF = " << coeffVec[5] << "\n";
-		cout << "G = " << coeffVec[6] << "\t\tH = " << coeffVec[7] << "\n";
-		cout << "I = " << coeffVec[8] << "\t\tJ = " << coeffVec[9] << "\n";
-		cout << "K = " << coeffVec[10] << "\tL = " << coeffVec[11] << "\n";
+		cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\n";
+		//cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\tC = " << coeffVec[2] << "\n";
+		//cout << "D = " << coeffVec[3] << "\tE = " << coeffVec[4] << "\tF = " << coeffVec[5] << "\n";
+		//cout << "G = " << coeffVec[6] << "\t\tH = " << coeffVec[7] << "\n";
+		//cout << "I = " << coeffVec[8] << "\t\tJ = " << coeffVec[9] << "\n";
+		//cout << "K = " << coeffVec[10] << "\tL = " << coeffVec[11] << "\n";
 
 		cout << "\nThe values of x0 follow:\n";
 		for (i = 0; i < rDim; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
 
-		uncmd(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
+		uncmnd(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
 
 		cout << "\ninfo = " << info << " \n";
 
