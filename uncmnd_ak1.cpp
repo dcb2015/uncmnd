@@ -745,11 +745,6 @@ int main()
 
 		cout << "The function coefficients follow:\n";
 		cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\n";
-		//cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\tC = " << coeffVec[2] << "\n";
-		//cout << "D = " << coeffVec[3] << "\tE = " << coeffVec[4] << "\tF = " << coeffVec[5] << "\n";
-		//cout << "G = " << coeffVec[6] << "\t\tH = " << coeffVec[7] << "\n";
-		//cout << "I = " << coeffVec[8] << "\t\tJ = " << coeffVec[9] << "\n";
-		//cout << "K = " << coeffVec[10] << "\tL = " << coeffVec[11] << "\n";
 
 		cout << "\nThe values of x0 follow:\n";
 		for (i = 0; i < rDim; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
