@@ -15,9 +15,12 @@ the coefficients A, B, and C would be saved in the coefficient matrix, which wou
 as required.
 
 Several other changes have been made to the original version of UNCMND:
+
 1) the options to supply analytic functions for the derivative array and Hessian matrix have been removed; instead, the derivative
 array is computed by finite difference and the Hessian matrix is computed by secant updates. The user has no choice.
+
 2) the error code info = 0 has been removed. I saw no way for the program to ever return with info having a value of 0.
 I am certain this is a typo, so thought it best to not even include in the program the option info = 0.
+
 3) A few boolean variables have been introduced to keep track of whether or not it is the first time through the program. If so,
 calculations can be avoided.
