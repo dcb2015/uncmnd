@@ -23,4 +23,4 @@ array is computed by finite difference and the Hessian matrix is computed by sec
 I am certain this is a typo, so thought it best to not even include in the program the option info = 0.
 
 3) A few boolean variables have been introduced to keep track of whether or not it is the first time through the program. If so,
-calculations can be avoided.
+some calculations can be avoided.
