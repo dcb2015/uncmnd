@@ -11,8 +11,8 @@ To distinguish this program from others, an '_ak1' suffix has been appended to i
 The underlying multi-dimensional optimization routine, UNCMND, is incorporated into the posted program to solve the General Rosenbrock
 Function for N = 10. It has been tested with several other cases, and small code blocks used in these test cases have been left in the
 program, but commented out. For example, for an Objective Function of the form F = A xy + B x^2 y + C x y^2. In such a case,
-the coefficients A, B, and C would be saved in the coefficient matrix, which would then be passed into the Objective Function for use
-as required. For a live, working, example of such a function, readers are invited to see a JavaScript version of this program that solves for four dimensions at the following URL:
+the coefficients A, B, and C would be saved in the coefficient matrix, which would then be passed into the Objective Function as
+required. For a live, working, example of such a function, readers are invited to see a JavaScript version of this program that solves for four dimensions at the following URL:
 
 http://www.akiti.ca/MultiOptRosen1.html
 
