@@ -1,6 +1,7 @@
-// UNCMND_ak1.CPP - Program for minimizing a function of several variables (with no constraints.) Can also be used for non-linear Least Squares Data-fitting.
+// UNCMND_ak1.CPP - Program for minimizing a function of several variables (with no constraints.)
+// Can also be used for non-linear Least Squares Data-fitting.
 // Written in Microsoft Visual Studio Express 2013 for Windows Desktop
-// 1 January 2017
+// 5 March 2017
 //
 // This program is a translation of the FORTRAN routine UNCMND
 // written by Stephen Nash, George Mason University.
@@ -20,7 +21,7 @@
 #include <vector>
 #include <cfloat>
 
-#define NUMCOEFF 2
+#define NUMCOEFF 20
 
 using namespace std;
 
@@ -36,28 +37,30 @@ void LLTSLD_ak1(int N, C1DArray& pvec, C1DArray gvec, C2DArray A);
 void LNSRCD_ak1_ak1(int N, C1DArray x0, C1DArray& x, C1DArray g, C1DArray& p, int *iretcd, bool *mxtake, double *tempfx, double STEPTL, double STEPMX, double* vec, double fxn0);
 void OPTSTD_ak1(int N, C1DArray p, C1DArray x, C1DArray gtemp, int iretcd, int *itrmcd, int *icscmx, double tempfx, double GRADTL, double STEPTL, int MAXIT, bool mxtake, int itncnt);
 void QRUPDD_ak1(int N, C1DArray& UVEC, C1DArray WVEC, C2DArray& A);
-void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC);
+void uncmnd_ak1(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC);
 
 double fObj(int N, double* vec, C1DArray x) {
-	// The objective function.
+	// The Objective Function: the Generalized Rosenbrock Function for N = 10.
 	// N: the number of dimensions (i.e., number of independent variables.)
-	// vec: the coefficient vector
+	// vec: the coefficient vector: not used in the present example
 	// x: the present value of x
 
-	double dummy, temp1, temp2;  // Dummy variables
+	double dummy = 1.0, temp1, dum1;
 
-	temp1 = x[1] - x[0] * x[0];
-	temp2 = 1.0 - x[0];
-	dummy = vec[0] * temp1 * temp1 + vec[1] * temp2 * temp2;
+	for (int i = 1; i < N; ++i){
+		temp1 = x[i] - x[i - 1] * x[i - 1];
+		dum1 = 1.0 - x[i - 1];
+		dummy += 100.0 * temp1 * temp1 + dum1 * dum1;
+	} // End for i
+
 	return dummy;
 } //End fObj
 
 double Euclid2Norm(int N, C1DArray inVec){
 
-	int i;
 	double absxi, dummy, scale = 0.0, ssq = 1.0;
 
-	for (i = 0; i < N; ++i){
+	for (int i = 0; i < N; ++i){
 		if (inVec[i] != 0){
 			absxi = fabs(inVec[i]);
 			dummy = scale / absxi;
@@ -203,25 +206,21 @@ void LNSRCD_ak1(int N, C1DArray x0, C1DArray& x, C1DArray g, C1DArray& p, int *i
 
 		// Calculate new lambda
 		if (fFlag) {  // First backtrack: quadratic fit
-			tlmbda = fxn0 + SLP;
-			tlmbda = -SLP / (2.0*((*tempfx) - tlmbda));
+			tlmbda = *tempfx - (fxn0 + SLP);
+			tlmbda = -0.5 * SLP / tlmbda;
 			fFlag = 0;
 		} // End if (fFlag)
 		else { //else (!fFlag); all subsequent backtracks: cubic fit
-			t1 = fxn0 + almbda*SLP;
-			t1 = *tempfx - t1;
-			t2 = fxn0 + plmbda*SLP;
-			t2 = pfpls - t2;
+			t1 = *tempfx - (fxn0 + almbda*SLP);
+			t2 = pfpls - (fxn0 + plmbda*SLP);
 			t3 = 1.0 / (almbda - plmbda);
-			a = t1 / (almbda*almbda) - t2 / (plmbda*plmbda);
-			a *= t3;
-			b = t2*almbda / (plmbda*plmbda) - t1*plmbda / (almbda*almbda);
-			b *= t3;
+			a = t3 * (t1 / (almbda*almbda) - t2 / (plmbda*plmbda));
+			b = t3 * (t2*almbda / (plmbda*plmbda) - t1*plmbda / (almbda*almbda));
 			disc = b*b - 3.0*a*SLP;
 
 			if (disc > b*b)  // Only one positive critical point, must be a minimum
 				tlmbda = sign(a)*sqrt(disc) - b;
-			else  // else (disc <= b*b); Both critical points positive, first is minimum
+			else  // else (disc <= b*b). Both critical points positive, first is minimum
 				tlmbda = -(b + sign(a)*sqrt(disc));
 
 			tlmbda /= (a*3.0);
@@ -409,11 +408,10 @@ void QRUPDD_ak1(int N, C1DArray& UVEC, C1DArray WVEC, C2DArray& A){
 	return;
 } // End of QRUPDD_ak1
 
-void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC) {
+void uncmnd_ak1(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0, C1DArray p, C1DArray g, C1DArray gtemp, C2DArray& A, C1DArray YVEC, C1DArray UVEC, C1DArray WVEC) {
 	// This subroutine minimizes a smooth nonlinear function of N independent variables
 	//
-	// Termination Code:
-	// Info = 0: Optimal solution found
+	// Termination Codes:
 	// Info = 1: Terminated with gradient small, x is probably optimal
 	// Info = 2: Terminated with stepsize small, x is probably optimal
 	// Info = 3: Lower point cannot be found, x is probably optimal
@@ -425,20 +423,13 @@ void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0,
 	const int MAXIT = 150; // Maximum number of iterations that will be allowed.
 	int i, icscmx, iretcd, itncnt = 0, j, k;
 	bool fDifFLG = 1, mxtake;
-	bool NOUPDT = 1, SKPUPD;		// Variables for SECFCD
-	double ALP, DEN1, RELTOL, SNORM2, YNRM2;		// Variables for SECFCD
+	bool NOUPDT = 1, NSDIAG = 0, SKPUPD;		// Variables for SECFCD
+	double ALP, DEN1, RELTOL, SNORM2, YNRM2;	// Variables for SECFCD
 	double stpsiz, temp, tempfx = 0.0;
 
 	const double EPSMCH = DBL_EPSILON; //Machine epsilon for type double
 	const double GRADTL = pow(EPSMCH, 1.0 / 3.0);
 	const double STEPTL = sqrt(EPSMCH);
-
-	// Check maximum step size
-	stpsiz = Euclid2Norm(N, x0);
-	if (stpsiz < 1.0) stpsiz = 1000.0;
-	else stpsiz *= 1000.0;
-
-	const double STEPMX = stpsiz;
 
 	iretcd = -log10(EPSMCH);
 	temp = pow(10.0, -iretcd);
@@ -447,6 +438,13 @@ void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0,
 	const double RNF = temp;
 	const double RT2RNF = sqrt(RNF);
 	const double RNFRT13 = pow(RNF, 1.0 / 3.0);
+
+	// Check maximum step size
+	stpsiz = Euclid2Norm(N, x0);
+	if (stpsiz < 1.0) stpsiz = 1000.0;
+	else stpsiz *= 1000.0;
+
+	const double STEPMX = stpsiz;
 
 	*fx = fObj(N, vec, x0);
 	cout << "\nAt x0, the Objective Function = " << *fx << " \n\n";
@@ -580,17 +578,12 @@ void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0,
 
 			SKPUPD = 1;
 
-			for (i = 0; i < N; ++i){ //  LINE 60 IN FORTRAN CODE
-
+			i = 0;
+			do { //  LINE 60 IN FORTRAN CODE
 				temp = fabs(g[i]);
 				if (temp < fabs(gtemp[i])) temp = fabs(gtemp[i]);
-
-				if (fabs(YVEC[i] - WVEC[i]) >= RELTOL*temp){
-					SKPUPD = 0;
-					break;
-				} // End if
-
-			} // End for i
+				if (fabs(YVEC[i] - WVEC[i++]) >= RELTOL*temp) SKPUPD = 0;
+			} while ((SKPUPD) && (i < N));
 
 			if (!SKPUPD){
 
@@ -601,17 +594,21 @@ void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0,
 				for (i = 0; i < N; ++i) UVEC[i] *= ALP;
 
 				// Copy L into Upper Triangular part. Zero L
+				// This step can be skipped the first time through--assuming A initialized to Identity Matrix
 
-				for (i = 1; i < N; ++i) {
+				if (NSDIAG){
+					for (i = 1; i < N; ++i) {
 
-					for (j = 0; j < i; ++j) {
+						for (j = 0; j < i; ++j) {
 
-						A[j][i] = A[i][j];
-						A[i][j] = 0.0;
+							A[j][i] = A[i][j];
+							A[i][j] = 0.0;
 
-					} // End for j
+						} // End for j
 
-				} // End for i
+					} // End for i
+				} // End if NSDIAG
+				else NSDIAG = 1;
 
 				QRUPDD_ak1(N, UVEC, WVEC, A);
 
@@ -619,9 +616,7 @@ void uncmnd(int N, double* vec, C1DArray& x, int *info, double *fx, C1DArray x0,
 				// Copy back to Lower Triangular part.
 
 				for (i = 1; i < N; ++i) {
-
 					for (j = 0; j < i; ++j) A[i][j] = A[j][i];
-
 				} // End for i
 
 			} // End if (!SKPUPD)
@@ -652,18 +647,19 @@ int main()
 {
 	char rflag = 0;	//Readiness flag 
 
-	cout << "                     UNCMND_ak1   (1 January 2017)\n";
+	cout << "                     UNCMND_ak1   (5 March 2017)\n";
 	cout << "=========================================================================== \n";
-	cout << "This program minimizes a function of two variables (without constraints): \n";
-	
-	cout << "A (y - x^2)^2 + B (1 - x)^2\n";
+	cout << "This program minimizes the Generalized Rosenbrock Function for N = 10\n";
+	cout << "(without constraints):\n\n";
+	cout << "F = 1.0 + SUMMATION from i = 2 to i = N of the following:\n";
+	cout << "[ 100 * (x_i - x_(i-1)^2)^2 + (1 - x_(i-1))^2 ]\n\n";
 	
 	cout << "Data should have been saved beforehand in a file named uncmnd_in.txt, which\n";
 	cout << "should be in the same folder as the uncmnd_ak1 executable. The\n";
-	cout << "first entry in this file should be N, the number of dimensions (2).\n";
-	cout << "The entries for the function should follow:\n";
-	cout << "A, and B.\n\n";
-
+	cout << "first entry in this file should be N, the number of dimensions (10).\n";
+	//cout << "The entries for the function should follow:\n";
+	//cout << "A, B, C, ...\n\n";
+	
 	cout << "The program assumes an initial guess for the solution has been provided.\n";
 	cout << "This data should come next. \n\n";
 
@@ -676,9 +672,9 @@ int main()
 
 	if (toupper(rflag) == 'Y') {
 
-		double coeffVec[NUMCOEFF];			// Holds values of the function: A, B, C, D, E, F, G, H, I, J, K, and L.
+		double coeffVec[NUMCOEFF];			// Holds values of the function: A, B, C, D, . . .
 		C1DArray g, gtemp, p, x0, xVec;		// g, gtemp, p, x0, and x vectors
-		C1DArray YVEC, UVEC, WVEC;		// Y, U, and W vectors for SECFCD. Only called if problem with Forward Difference Method
+		C1DArray YVEC, UVEC, WVEC;		// Y, U, and W vectors for SECFCD.
 		C2DArray HessMat;					// Hessian Matrix
 		int i, info, rDim;
 		double fv;							// The function value
@@ -709,6 +705,13 @@ int main()
 			return 0;
 		}
 
+		ofstream out("uncmnd_out.txt", ios::out);
+		if (!out) {
+			cout << "Cannot open the output file. Program terminated.\n";
+			in.close(); //Close the input file before terminating
+			return 0;
+		}
+
 		try { // Resize the g, gtemp, p, x0, and xVec arrays to their required sizes
 			p.resize(rDim);
 			g.resize(rDim);
@@ -727,53 +730,63 @@ int main()
 
 		catch (bad_alloc& xa) { // Catch block, for exceptions
 			in.close();
+			out.close();
 			cerr << "In catch block for resizing x0 and xVec arrays: " << xa.what() << "\n";
 			cout << "\nEnter any key to continue. \n";
 			cin >> rflag;
 			return 0;
 		} // End of catch block
 
-		for (i = 0; i < NUMCOEFF; ++i)  //Input the function coefficients to array
-			in >> coeffVec[i];
+		//for (i = 0; i < NUMCOEFF; ++i)  //Input the function coefficients to array
+		//	in >> coeffVec[i];
 
 		for (i = 0; i < rDim; ++i)  //Input the x0 vector from the file
 			in >> x0[i];
 
 		in.close();  //Close the input file
 
-		cout.precision(DBL_DIG);
-
+		out.precision(DBL_DIG);
+/*
 		cout << "The function coefficients follow:\n";
 		cout << "A = " << coeffVec[0] << "\t\tB = " << coeffVec[1] << "\n";
+		cout << "C = " << coeffVec[2] << "\t\tD = " << coeffVec[3] << "\n";
+		cout << "E = " << coeffVec[4] << "\t\tF = " << coeffVec[5] << "\n";
+		cout << "G = " << coeffVec[6] << "\t\tH = " << coeffVec[7] << "\n";
+		cout << "I = " << coeffVec[8] << "\t\tJ = " << coeffVec[9] << "\n";
+		cout << "K = " << coeffVec[10] << "\t\tL = " << coeffVec[11] << "\n";
+		cout << "M = " << coeffVec[12] << "\t\tN = " << coeffVec[13] << "\n";
+		cout << "O = " << coeffVec[14] << "\t\tP = " << coeffVec[15] << "\n";
+		cout << "Q = " << coeffVec[16] << "\t\tR = " << coeffVec[17] << "\n";
+		cout << "S = " << coeffVec[18] << "\t\tT = " << coeffVec[19] << "\n";
+*/
+		out << "\nThe values of x0 follow:\n";
+		for (i = 0; i < rDim; ++i) out << "x0[" << i << "] = " << x0[i] << "\n";
 
-		cout << "\nThe values of x0 follow:\n";
-		for (i = 0; i < rDim; ++i) cout << "x0[" << i << "] = " << x0[i] << "\n";
+		uncmnd_ak1(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
 
-		uncmnd(rDim, coeffVec, xVec, &info, &fv, x0, p, g, gtemp, HessMat, YVEC, UVEC, WVEC);
-
-		cout << "\ninfo = " << info << " \n";
+		out << "\ninfo = " << info << " \n";
 
 		switch (info)
 		{
-		case 0:	cout << "Optimal solution found.\n";
+		//case 0:	cout << "Optimal solution found.\n";
+		//		break;
+		case 1:	out << "Terminated with gradient small, x is probably optimal.\n";
 				break;
-		case 1:	cout << "Terminated with gradient small, x is probably optimal.\n";
+		case 2:	out << "Terminated with stepsize small, x is probably optimal.\n";
 				break;
-		case 2:	cout << "Terminated with stepsize small, x is probably optimal.\n";
-				break;
-		case 3:	cout << "Lower point cannot be found, x is probably optimal.\n";
+		case 3:	out << "Lower point cannot be found, x is probably optimal.\n";
 			break;
-		case 4:	cout << " Iteration limit (150) exceeded.\n";
+		case 4:	out << " Iteration limit (150) exceeded.\n";
 				break;
-		case 5:	cout << "Too many large steps, function may be unbounded.\n";
+		case 5:	out << "Too many large steps, function may be unbounded.\n";
 				break;
-		default:	cout << "Invalid Error Code.\n";
+		default:	out << "Invalid Error Code.\n";
 		} //End switch
 
-		cout << "\nThe values of x follow:" << "  \n";
-		for (i = 0; i < rDim; ++i) cout << xVec[i] << "  \n";
+		out << "\nThe values of x follow:" << "  \n";
+		for (i = 0; i < rDim; ++i) out << xVec[i] << "  \n";
 
-		cout << "\nAt this point, the Objective Function = " << fv << " \n";
+		out << "\nAt this point, the Objective Function = " << fv << " \n";
 
 	} //End if rflag = 'Y'
 	else cout << "\nNot ready. Try again when ready with information. \n";
